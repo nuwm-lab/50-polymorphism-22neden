@@ -1,115 +1,122 @@
 using System;
+using System.Globalization;
 
-namespace OOP_Lab_Variant10
+namespace OOP_Lab_Var10
 {
-    // Базовий клас: дріб 1/(a * x)
+    // Базовий клас: дріб 1 / (a * x)
     class Fraction
     {
-        // Інкапсуляція: поля зроблені protected, доступні в похідному класі
-        protected double a;
+        // зміна 03: перейменування поля на _a і зроблено private
+        private double _a;
 
-        public Fraction()
+        // зміна 03: додано protected властивість для доступу у похідних класах
+        protected double A
         {
-            a = 1.0;
+            get => _a;
+            set => _a = value;
         }
 
-        // Віртуальний метод для задання коефіцієнтів
-        virtual public void SetCoefficients()
+        // зміна 02: порядок модифікаторів (public virtual)
+        public virtual void InitCoefficients()
         {
-            Console.Write("Введіть a (не нуль): ");
-            a = ReadNonZeroDouble();
+            Console.Write("Введіть коефіцієнт a (може бути 0, але тоді буде ділення на нуль): ");
+            A = ReadDoubleFromConsole();
         }
 
-        // Віртуальний метод виведення коефіцієнтів
-        virtual public void Print()
+        // зміна 02: порядок модифікаторів
+        public virtual void Show()
         {
-            Console.WriteLine($"Дріб: 1/(a * x), a = {a}");
+            Console.WriteLine($"Тип: Простий дріб  1/(a*x). a = {A}");
         }
 
-        // Віртуальний метод обчислення значення дробу у точці x
-        virtual public double Evaluate(double x)
+        // зміна 02: порядок модифікаторів
+        public virtual double Value(double x)
         {
-            double denom = a * x;
+            double denom = A * x;
             if (Math.Abs(denom) < 1e-12)
             {
-                throw new DivideByZeroException("Знаменник дорівнює нулю при заданих a та x.");
+                throw new DivideByZeroException("Демонстратор: знаменник (a * x) дорівнює нулю.");
             }
             return 1.0 / denom;
         }
 
-        // Допоміжний метод для читання ненульового double
-        protected double ReadNonZeroDouble()
+        // зміна 01: виправлено коментар — тепер відповідає реальній логіці
+        /// <summary>
+        /// Зчитує число типу double з консолі (допускає 0).
+        /// </summary>
+        protected static double ReadDoubleFromConsole()
         {
             while (true)
             {
                 string s = Console.ReadLine();
-                if (double.TryParse(s, out double val))
+                if (double.TryParse(s?.Trim(), NumberStyles.Any, CultureInfo.InvariantCulture, out double val) ||
+                    double.TryParse(s?.Trim(), NumberStyles.Any, CultureInfo.CurrentCulture, out val))
                 {
-                    if (Math.Abs(val) > 1e-12) return val;
+                    return val;
                 }
-                Console.Write("Невірне значення. Введіть число, що не дорівнює нулю: ");
+                Console.Write("Невірний формат. Спробуйте ще раз: ");
             }
+        }
+
+        // зміна 01: новий метод для зчитування числа, що не дорівнює 0
+        protected static double ReadDoubleNotZero(string prompt)
+        {
+            double val;
+            do
+            {
+                Console.Write(prompt);
+                val = ReadDoubleFromConsole();
+                if (Math.Abs(val) < 1e-12)
+                    Console.WriteLine("Значення не може бути 0. Повторіть ввод.");
+            } while (Math.Abs(val) < 1e-12);
+            return val;
         }
     }
 
-    // Похідний клас: потрійний неперервний дріб 1/(a1*x + 1/(a2*x + 1/(a3*x)))
-    class ContinuedFraction : Fraction
+    // Похідний клас: триступеневий підхідний дріб
+    class ContinuedTrigFraction : Fraction
     {
-        protected double a1, a2, a3;
+        // зміна 03: перейменовано поля, зроблено private
+        private double _a1, _a2, _a3;
 
-        public ContinuedFraction()
+        // зміна 03: додано protected властивості для доступу
+        protected double A1 { get => _a1; set => _a1 = value; }
+        protected double A2 { get => _a2; set => _a2 = value; }
+        protected double A3 { get => _a3; set => _a3 = value; }
+
+        // зміна 02: правильний порядок модифікаторів
+        public override void InitCoefficients()
         {
-            a1 = a2 = a3 = 1.0;
+            // зміна 01: використовуємо ReadDoubleNotZero() замість простого ReadDoubleFromConsole()
+            A1 = ReadDoubleNotZero("Введіть a1 (не може бути 0): ");
+            A2 = ReadDoubleNotZero("Введіть a2 (не може бути 0): ");
+            A3 = ReadDoubleNotZero("Введіть a3 (не може бути 0): ");
         }
 
-        // Перевизначаємо метод для задання коефіцієнтів
-        public override void SetCoefficients()
+        // зміна 02
+        public override void Show()
         {
-            Console.WriteLine("Введіть коефіцієнти a1, a2, a3 (кожен не повинен зробити знаменник нульовим):");
-            Console.Write("a1 = "); a1 = ReadDoubleNotCreatingZeroDenominator();
-            Console.Write("a2 = "); a2 = ReadDoubleNotCreatingZeroDenominator();
-            Console.Write("a3 = "); a3 = ReadDoubleNotCreatingZeroDenominator();
+            Console.WriteLine("Тип: Тригонометричний / підхідний дріб:");
+            Console.WriteLine($"   1 / ( {A1}*x + 1/( {A2}*x + 1/( {A3}*x ) ) )");
+            Console.WriteLine($"Коефіцієнти: a1 = {A1}, a2 = {A2}, a3 = {A3}");
         }
 
-        public override void Print()
+        // зміна 02
+        public override double Value(double x)
         {
-            Console.WriteLine($"Тригонометричний підхідний дріб (ланцюжок): 1/(a1*x + 1/(a2*x + 1/(a3*x)))");
-            Console.WriteLine($"a1 = {a1}, a2 = {a2}, a3 = {a3}");
-        }
+            double innerMost = A3 * x;
+            if (Math.Abs(innerMost) < 1e-12)
+                throw new DivideByZeroException("Неможливо обчислити: a3 * x = 0 (внутрішній знаменник).");
 
-        // Обчислюємо значення дробу; перевіряємо, щоб проміжні знаменники не були нульовими
-        public override double Evaluate(double x)
-        {
-            // Denominator inner-most: a3 * x
-            double d3 = a3 * x;
-            if (Math.Abs(d3) < 1e-12) throw new DivideByZeroException("Внутрішній знаменник a3 * x дорівнює нулю.");
+            double inner2 = A2 * x + 1.0 / innerMost;
+            if (Math.Abs(inner2) < 1e-12)
+                throw new DivideByZeroException("Неможливо обчислити: a2*x + 1/(a3*x) = 0 (середній знаменник).");
 
-            // Next: a2 * x + 1 / d3
-            double d2 = a2 * x + 1.0 / d3;
-            if (Math.Abs(d2) < 1e-12) throw new DivideByZeroException("Другий знаменник (a2*x + 1/(a3*x)) дорівнює нулю.");
+            double inner1 = A1 * x + 1.0 / inner2;
+            if (Math.Abs(inner1) < 1e-12)
+                throw new DivideByZeroException("Неможливо обчислити: a1*x + 1/(a2*x + 1/(a3*x)) = 0 (зовнішній знаменник).");
 
-            // Next: a1 * x + 1 / d2
-            double d1 = a1 * x + 1.0 / d2;
-            if (Math.Abs(d1) < 1e-12) throw new DivideByZeroException("Зовнішній знаменник (a1*x + 1/(...)) дорівнює нулю.");
-
-            return 1.0 / d1;
-        }
-
-        // Читаємо число; тут просто уникаємо нуля для коефіцієнта,
-        // але основну перевірку на нуль знаменника робимо в Evaluate.
-        private double ReadDoubleNotCreatingZeroDenominator()
-        {
-            while (true)
-            {
-                string s = Console.ReadLine();
-                if (double.TryParse(s, out double val))
-                {
-                    // не примушуємо val != 0, бо при x !=0 може бути прийнятно,
-                    // але краще попередити невдале a == 0 (може зіпсувати вираз)
-                    if (Math.Abs(val) > 1e-12) return val;
-                }
-                Console.Write("Невірне значення. Введіть число (не нуль): ");
-            }
+            return 1.0 / inner1;
         }
     }
 
@@ -117,52 +124,56 @@ namespace OOP_Lab_Variant10
     {
         static void Main(string[] args)
         {
-            Console.WriteLine("Лабораторна робота — варіант 10 (дріб та тригонометричний підхідний дріб)");
-            Console.WriteLine("Виберіть режим роботи:");
-            Console.WriteLine("1 — працювати з простим дробом 1/(a * x)");
-            Console.WriteLine("2 — працювати з підрядним дробом 1/(a1*x + 1/(a2*x + 1/(a3*x)))");
-            Console.Write("Ваш вибір (1 або 2): ");
+            Console.WriteLine("Лабораторна (варіант 10). Поліморфізм та віртуальні методи.");
+            Console.WriteLine("Оберіть режим роботи:");
+            Console.WriteLine("  1 - Простий дріб 1/(a * x)");
+            Console.WriteLine("  2 - Тригонометричний / підхідний дріб 1/(a1*x + 1/(a2*x + 1/(a3*x)))");
+            Console.WriteLine("  0 - Вихід");
 
-            string choice = Console.ReadLine();
-            Fraction obj = null;
+            while (true)
+            {
+                Console.Write("Ваш вибір (0/1/2): ");
+                string choice = Console.ReadLine()?.Trim();
 
-            if (choice == "1")
-            {
-                obj = new Fraction();
-            }
-            else if (choice == "2")
-            {
-                obj = new ContinuedFraction();
-            }
-            else
-            {
-                Console.WriteLine("Невірний вибір. Програма завершується.");
-                return;
-            }
+                if (choice == "0")
+                {
+                    Console.WriteLine("Вихід. Успіхів!");
+                    return;
+                }
 
-            // Викликаємо віртуальний метод через посилання на базовий клас
-            obj.SetCoefficients();
-            obj.Print();
+                Fraction baseObj = null;
 
-            Console.Write("Введіть значення x для обчислення дробу: ");
-            if (!double.TryParse(Console.ReadLine(), out double x))
-            {
-                Console.WriteLine("Некоректне значення x. Завершення.");
-                return;
-            }
+                if (choice == "1")
+                    baseObj = new Fraction();
+                else if (choice == "2")
+                    baseObj = new ContinuedTrigFraction();
+                else
+                {
+                    Console.WriteLine("Невірний вибір. Спробуйте ще раз.");
+                    continue;
+                }
 
-            try
-            {
-                double result = obj.Evaluate(x);
-                Console.WriteLine($"Значення дробу при x = {x} : {result}");
-            }
-            catch (DivideByZeroException ex)
-            {
-                Console.WriteLine($"Помилка: {ex.Message}");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Несподівана помилка: {ex.Message}");
+                baseObj.InitCoefficients();
+                baseObj.Show();
+
+                Console.Write("Введіть точку x, в якій обчислити значення дробу: ");
+                double x = Fraction.ReadDoubleFromConsole();
+
+                try
+                {
+                    double result = baseObj.Value(x);
+                    Console.WriteLine($"Значення дробу в x = {x} : {result}");
+                }
+                catch (DivideByZeroException ex)
+                {
+                    Console.WriteLine("Помилка обчислення: " + ex.Message);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("Несподівана помилка: " + ex.Message);
+                }
+
+                Console.WriteLine("\n--- Готово. Можна повторити або вийти ---\n");
             }
         }
     }
